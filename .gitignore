@@ -1,0 +1,26 @@
+# Secrets - never commit
+.env
+.env.*
+!.env.example
+
+# Private planning notes (repo is public)
+CODEGEIST_2026_CONTEXT.md
+notes/
+
+# Dependencies and build output
+node_modules/
+dist/
+build/
+coverage/
+static/*/build/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
