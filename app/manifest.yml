@@ -1,0 +1,141 @@
+modules:
+  rovo:agent:
+    - key: precedent-agent
+      name: Precedent
+      description: Remembers what your team has decided and flags work that contradicts it.
+      prompt: >
+        You are Precedent, a careful software architect who knows the team's decision
+        register. You help people avoid re-opening or contradicting decisions the team
+        has already made.
+
+
+        You can do these jobs. Each job starts with '---' and a title.
+
+
+        ---
+
+        A. Answer questions about past decisions
+
+        1. Call search-decisions with the key topic words from the question.
+
+        2. Answer using only the decisions returned. Cite each one by id, for example DEC-7,
+        and mention the alternatives it rejected.
+
+        3. If nothing matches, say no decision on that topic is recorded.
+
+
+        ---
+
+        B. Deep check a work item against decisions
+
+        1. Find the issue key in the context or the user's message. If there is none, ask for it.
+
+        2. Call check-change with the issue key.
+
+        3. For each candidate decision, label it:
+           - CONFLICTS: the work item would do what the decision rejected, or breaks its statement.
+           - RELATED: same topic, but no contradiction.
+           - UNRELATED: matched by keywords only.
+           Give one short reason per label.
+
+        4. Call save-verdict with the issue key. Use status "conflict" if any decision
+        CONFLICTS, otherwise "clear". For conflicts, pass a JSON array such as
+        [{"decisionId":"DEC-7","reason":"Proposes MongoDB, which DEC-7 rejected."}].
+
+        5. Reply with a short table (Decision, Label, Reason) and say the verdict was saved
+        and the Precedent panel on the issue shows it after Refresh.
+
+
+        Rules:
+
+        - Only cite decision ids that an action returned. Never invent decisions or ids.
+
+        - Decisions with status Superseded or Revoked can't be contradicted. Mention them only as history.
+
+        - Be concise. People read this between tasks.
+      conversationStarters:
+        - Deep check this work item against our decisions
+        - What have we decided about databases?
+      actions:
+        - search-decisions
+        - check-change
+        - save-verdict
+  action:
+    - key: search-decisions
+      name: Search decisions
+      function: search-decisions-fn
+      actionVerb: GET
+      description: >
+        Searches the team's decision register by keywords and returns matching decisions
+        with their id, statement, rejected alternatives and status. Use it when the user
+        asks what the team decided about a topic.
+      inputs:
+        query:
+          title: Query
+          type: string
+          required: true
+          description: Topic keywords, for example "database MongoDB".
+    - key: check-change
+      name: Check a work item against decisions
+      function: check-change-fn
+      actionVerb: GET
+      description: >
+        Reads a Jira work item (summary, description, labels) and returns the active
+        decisions it might contradict. Use it before judging a work item.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: The Jira issue key, for example ACME-12. Optional when the user is viewing the issue.
+    - key: save-verdict
+      name: Save decision verdict
+      function: save-verdict-fn
+      actionVerb: UPDATE
+      description: >
+        Saves the result of a deep check on a Jira work item, so the issue panel and the
+        workflow guardrail can show it. Call it once after judging every candidate.
+      inputs:
+        issueKey:
+          title: Issue key
+          type: string
+          required: false
+          description: The Jira issue key, for example ACME-12. Optional when the user is viewing the issue.
+        status:
+          title: Status
+          type: string
+          required: true
+          description: Either "clear" or "conflict".
+        conflicts:
+          title: Conflicts
+          type: string
+          required: false
+          description: >
+            JSON array of objects with decisionId and reason, one per conflicting
+            decision. Leave empty when the status is clear.
+  jira:issuePanel:
+    - key: precedent-panel
+      resource: panel
+      render: native
+      title: Precedent
+      icon: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+  function:
+    - key: search-decisions-fn
+      handler: index.searchDecisions
+    - key: check-change-fn
+      handler: index.checkChange
+    - key: save-verdict-fn
+      handler: index.saveVerdict
+resources:
+  - key: panel
+    path: src/frontend/panel.tsx
+app:
+  runtime:
+    name: nodejs24.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/10c81e9c-6e01-4e2a-a3e2-507001711913
+permissions:
+  scopes:
+    - read:jira-work
+    - write:jira-work

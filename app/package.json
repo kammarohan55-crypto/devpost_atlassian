@@ -1,0 +1,24 @@
+{
+  "name": "precedent",
+  "version": "0.1.0",
+  "description": "Remembers what a team has decided and flags new work that contradicts it.",
+  "license": "MIT",
+  "private": true,
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "forge lint"
+  },
+  "dependencies": {
+    "@forge/api": "^8.4.0",
+    "@forge/bridge": "^7.2.1",
+    "@forge/react": "^12.4.0",
+    "react": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/react": "^18.3.31",
+    "typescript": "~5.9.3",
+    "vitest": "^5.1.0"
+  }
+}
